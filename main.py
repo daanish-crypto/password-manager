@@ -9,33 +9,35 @@ from PyQt6.QtGui import QFont, QColor
 from PyQt6.QtCore import Qt, QTimer
 
 class PasswordManager(QWidget):
-    PAT = "1234" # Personal Access Token
-    PSWDS_PATH = "password-manager/passwords.json" # Path to store passwords
+    PAT = "1234" # yes i took the idea of PAT from github
+    PSWDS_PATH = "password-manager/passwords.txt" # path to encrypted file
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("SecureVault") # A more engaging title
-        self.setGeometry(100, 100, 450, 550) # Slightly larger window
-        self.setMinimumSize(400, 500) # Minimum size to maintain layout integrity
+        # window
+        self.setWindowTitle("SecureVault") 
+        self.setGeometry(100, 100, 450, 550) 
+        self.setMinimumSize(400, 500) 
         self.init_ui()
         self.apply_styles()
 
     def init_ui(self):
-        # Define fonts for consistent styling
+        #fonts 
         self.font_regular = QFont("Segoe UI", 10)
         self.font_bold = QFont("Segoe UI", 12, QFont.Weight.Bold)
         self.font_heading = QFont("Segoe UI", 16, QFont.Weight.Bold)
 
-        # Main layout for the entire window
+        # layout
         self.main_layout = QVBoxLayout()
         self.main_layout.setContentsMargins(30, 30, 30, 30) # Add padding around the edges
         self.main_layout.setSpacing(20) # Spacing between major sections
         self.setLayout(self.main_layout)
-
+        
+        # frames
         self.setup_login_frame()
         self.setup_main_frame()
 
-        # Initially show login frame and hide main frame
+        # show 
         self.main_layout.addWidget(self.login_frame)
         self.main_layout.addWidget(self.main_frame)
         self.login_frame.show()
