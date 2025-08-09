@@ -1,295 +1,509 @@
 import sys
 import json
 import os
+import base64
+from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.backends import default_backend
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QMessageBox, QFrame, QSizePolicy
+    QPushButton, QFrame, QStackedWidget, QGraphicsOpacityEffect, QListWidget,
+    QListWidgetItem, QSizePolicy
 )
-from PyQt6.QtGui import QFont, QColor
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QFont, QIcon, QPixmap, QPainter, QColor
+from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QTimer
 
-class PasswordManager(QWidget):
-    PAT = "1234" # yes i took the idea of PAT from github
-    PSWDS_PATH = "password-manager/passwords.txt" # path to encrypted file
+# --- Constants ---
+VAULT_PATH = "password-manager/vault.json"
+AUTH_STRING = "verified"
 
+# --- Theme Colors ---
+COLOR_BACKGROUND = "#1e1e2f"
+COLOR_PRIMARY = "#27293d"
+COLOR_ACCENT = "#8a4fff"
+COLOR_ACCENT_HOVER = "#a076f9"
+COLOR_TEXT = "#e0e0e0"
+COLOR_TEXT_SECONDARY = "#a0a0c0"
+COLOR_SUCCESS = "#50fa7b"
+COLOR_ERROR = "#ff5555"
+COLOR_BORDER = "#44475a"
+
+class SecureVault(QWidget):
+    """
+    A secure, local password manager with a modern graphical user interface.
+    """
     def __init__(self):
         super().__init__()
-        # window
-        self.setWindowTitle("SecureVault") 
-        self.setGeometry(100, 100, 450, 550) 
-        self.setMinimumSize(400, 500) 
+        self.pat = ""
         self.init_ui()
-        self.apply_styles()
+        self.load_styles()
 
     def init_ui(self):
-        #fonts 
-        self.font_regular = QFont("Segoe UI", 10)
-        self.font_bold = QFont("Segoe UI", 12, QFont.Weight.Bold)
-        self.font_heading = QFont("Segoe UI", 16, QFont.Weight.Bold)
+        """Initializes the main UI components and layout."""
+        self.setWindowTitle("SecureVault")
+        self.setWindowIcon(self.create_icon(COLOR_ACCENT))
+        self.setGeometry(100, 100, 500, 600)
+        self.setMinimumSize(450, 550)
 
-        # layout
-        self.main_layout = QVBoxLayout()
-        self.main_layout.setContentsMargins(30, 30, 30, 30) # Add padding around the edges
-        self.main_layout.setSpacing(20) # Spacing between major sections
-        self.setLayout(self.main_layout)
-        
-        # frames
-        self.setup_login_frame()
-        self.setup_main_frame()
+        # --- Main Layout ---
+        self.stacked_widget = QStackedWidget()
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.addWidget(self.stacked_widget)
 
-        # show 
-        self.main_layout.addWidget(self.login_frame)
-        self.main_layout.addWidget(self.main_frame)
-        self.login_frame.show()
-        self.main_frame.hide()
+        # --- Create Pages ---
+        self.login_page = self.create_login_page()
+        self.main_page = self.create_main_page()
 
-        # Center the window on the screen
-        self.center_window()
+        self.stacked_widget.addWidget(self.login_page)
+        self.stacked_widget.addWidget(self.main_page)
 
-    def center_window(self):
-        # Get the screen geometry
-        screen_geometry = QApplication.primaryScreen().geometry()
-        # Calculate the center point
-        center_point = screen_geometry.center()
-        # Move the window to the center
-        self.move(center_point.x() - self.width() // 2, center_point.y() - self.height() // 2)
+        # --- Notification Label ---
+        self.notification_label = QLabel("", self)
+        self.notification_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.notification_label.setObjectName("NotificationLabel")
+        self.notification_label.setFixedHeight(0)
+        main_layout.addWidget(self.notification_label)
 
-    def setup_login_frame(self):
-        self.login_frame = QFrame(self)
-        self.login_frame.setObjectName("loginFrame") # Object name for QSS
-        login_layout = QVBoxLayout()
-        login_layout.setContentsMargins(20, 20, 20, 20)
-        login_layout.setSpacing(15)
-        self.login_frame.setLayout(login_layout)
+    def create_login_page(self):
+        """Creates the login screen widget."""
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.setSpacing(20)
 
-        # Login heading
-        login_heading = QLabel("Welcome to SecureVault")
-        login_heading.setFont(self.font_heading)
-        login_heading.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        login_layout.addWidget(login_heading)
+        title = QLabel("SecureVault")
+        title.setObjectName("TitleLabel")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        pat_label = QLabel("Please enter your Personal Access Token (PAT)")
-        pat_label.setFont(self.font_regular)
-        pat_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        login_layout.addWidget(pat_label)
+        subtitle = QLabel("Enter your Personal Access Token to unlock.")
+        subtitle.setObjectName("SubtitleLabel")
+        subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.pat_entry = QLineEdit()
         self.pat_entry.setEchoMode(QLineEdit.EchoMode.Password)
-        self.pat_entry.setFont(self.font_regular)
-        self.pat_entry.setPlaceholderText("Enter PAT")
-        self.pat_entry.setClearButtonEnabled(True) # Clear button for convenience
-        login_layout.addWidget(self.pat_entry)
+        self.pat_entry.setPlaceholderText("Your PAT")
+        self.pat_entry.returnPressed.connect(self.verify_pat)
+        self.pat_entry.setFixedWidth(300)
 
-        login_button = QPushButton("Login")
-        login_button.setFont(self.font_bold)
+        login_button = QPushButton("Unlock Vault")
         login_button.clicked.connect(self.verify_pat)
-        login_layout.addWidget(login_button)
+        login_button.setFixedWidth(300)
 
-        login_layout.addStretch() # Push content to top
+        layout.addWidget(title)
+        layout.addWidget(subtitle)
+        layout.addWidget(self.pat_entry, 0, Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(login_button, 0, Qt.AlignmentFlag.AlignCenter)
 
-    def setup_main_frame(self):
-        self.main_frame = QFrame(self)
-        self.main_frame.setObjectName("mainFrame") # Object name for QSS
-        main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(20)
-        self.main_frame.setLayout(main_layout)
+        return page
 
-        # Search Section
-        search_heading = QLabel("Search Passwords")
-        search_heading.setFont(self.font_heading)
-        search_heading.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        main_layout.addWidget(search_heading)
+    def create_main_page(self):
+        """Creates the main application screen with search and add functionalities."""
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
 
-        search_input_layout = QHBoxLayout()
+        # --- Header ---
+        header_layout = QHBoxLayout()
+        title = QLabel("Password Manager")
+        title.setObjectName("HeaderLabel")
+        logout_button = QPushButton("Logout")
+        logout_button.setObjectName("LogoutButton")
+        logout_button.setFixedWidth(100)
+        logout_button.clicked.connect(self.logout)
+        header_layout.addWidget(title)
+        header_layout.addStretch()
+        header_layout.addWidget(logout_button)
+        layout.addLayout(header_layout)
+
+        # --- Search Section ---
+        search_frame = QFrame()
+        search_frame.setObjectName("CardFrame")
+        search_layout = QVBoxLayout(search_frame)
+
+        search_label = QLabel("Search Credentials")
+        search_label.setObjectName("CardTitleLabel")
+
         self.search_entry = QLineEdit()
-        self.search_entry.setFont(self.font_regular)
-        self.search_entry.setPlaceholderText("Enter username to search")
-        self.search_entry.setClearButtonEnabled(True)
-        search_input_layout.addWidget(self.search_entry)
+        self.search_entry.setPlaceholderText("Type to search for a username...")
+        self.search_entry.textChanged.connect(self.filter_passwords)
 
-        search_button = QPushButton("Search")
-        search_button.setFont(self.font_bold)
-        search_button.clicked.connect(self.search_pswd)
-        search_button.setFixedWidth(100) # Fixed width for the button
-        search_input_layout.addWidget(search_button)
-        main_layout.addLayout(search_input_layout)
+        self.password_list = QListWidget()
+        self.password_list.setObjectName("PasswordList")
+        self.password_list.setAlternatingRowColors(True)
 
-        # Separator line (using a QFrame for a visual line)
-        separator = QFrame()
-        separator.setFrameShape(QFrame.Shape.HLine)
-        separator.setFrameShadow(QFrame.Shadow.Sunken)
-        main_layout.addWidget(separator)
+        search_layout.addWidget(search_label)
+        search_layout.addWidget(self.search_entry)
+        search_layout.addWidget(self.password_list)
+        layout.addWidget(search_frame)
 
-        # Add New Password Section
-        add_heading = QLabel("Add New Password")
-        add_heading.setFont(self.font_heading)
-        add_heading.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        main_layout.addWidget(add_heading)
+        # --- Add Section ---
+        add_frame = QFrame()
+        add_frame.setObjectName("CardFrame")
+        add_layout = QVBoxLayout(add_frame)
 
-        main_layout.addWidget(QLabel("Username:", font=self.font_regular))
+        add_label = QLabel("Add New Credential")
+        add_label.setObjectName("CardTitleLabel")
+
         self.add_user_entry = QLineEdit()
-        self.add_user_entry.setFont(self.font_regular)
         self.add_user_entry.setPlaceholderText("Enter username")
-        self.add_user_entry.setClearButtonEnabled(True)
-        main_layout.addWidget(self.add_user_entry)
 
-        main_layout.addWidget(QLabel("Password:", font=self.font_regular))
         self.add_pass_entry = QLineEdit()
-        self.add_pass_entry.setFont(self.font_regular)
-        self.add_pass_entry.setEchoMode(QLineEdit.EchoMode.Password) # Mask password input
         self.add_pass_entry.setPlaceholderText("Enter password")
-        self.add_pass_entry.setClearButtonEnabled(True)
-        main_layout.addWidget(self.add_pass_entry)
 
-        add_button = QPushButton("Add Password")
-        add_button.setFont(self.font_bold)
-        add_button.clicked.connect(self.add_pswd)
-        main_layout.addWidget(add_button)
+        add_button = QPushButton("Add Credential")
+        add_button.clicked.connect(self.add_password)
 
-        main_layout.addStretch() # Push content to top
+        add_layout.addWidget(add_label)
+        add_layout.addWidget(self.add_user_entry)
+        add_layout.addWidget(self.add_pass_entry)
+        add_layout.addWidget(add_button)
+        layout.addWidget(add_frame)
 
-    def apply_styles(self):
-        # QSS for a modern, clean look
-        self.setStyleSheet("""
-            QWidget {
-                background-color: #f0f4f8; /* Light blue-gray background */
-                color: #333333; /* Darker text for contrast */
-                font-family: "Segoe UI";
-            }
+        return page
 
-            QFrame#loginFrame, QFrame#mainFrame {
-                background-color: #ffffff; /* White background for content frames */
-                border-radius: 15px; /* Rounded corners */
-                box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-            }
-
-            QLabel {
-                color: #333333;
-                padding: 5px 0;
-            }
-
-            QLabel[font-size="16"] { /* Targeting heading labels */
-                color: #2c3e50; /* Darker blue for headings */
-                margin-bottom: 10px;
-            }
-
-            QLineEdit {
-                border: 2px solid #bdc3c7; /* Light gray border */
-                border-radius: 8px; /* Rounded corners for input fields */
-                padding: 10px; /* Ample padding */
-                background-color: #ecf0f1; /* Slightly darker background for input */
-                selection-background-color: #3498db; /* Blue selection */
-                selection-color: white;
-            }
-
-            QLineEdit:focus {
-                border: 2px solid #3498db; /* Blue border on focus */
-                background-color: #ffffff;
-            }
-
-            QPushButton {
-                background-color: #3498db; /* Flat blue button */
-                color: white;
-                border: none;
-                border-radius: 10px; /* Rounded corners */
-                padding: 12px 25px; /* Generous padding */
-                margin-top: 10px;
+    def load_styles(self):
+        """Loads the stylesheet for the application."""
+        stylesheet = f"""
+            QWidget {{
+                background-color: {COLOR_BACKGROUND};
+                color: {COLOR_TEXT};
+                font-family: Segoe UI, sans-serif;
+            }}
+            #TitleLabel {{
+                font-size: 53px;
                 font-weight: bold;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-            }
+                color: {COLOR_TEXT};
+            }}
+            #SubtitleLabel {{
+                font-size: 15px;
+                color: {COLOR_TEXT_SECONDARY};
+            }}
+            #HeaderLabel {{
+                font-size: 24px;
+                font-weight: bold;
+                color: {COLOR_TEXT};
+            }}
+            #CardFrame {{
+                background-color: {COLOR_PRIMARY};
+                border-radius: 8px;
+            }}
+            #CardTitleLabel {{
+                font-size: 16px;
+                font-weight: bold;
+                color: {COLOR_TEXT};
+                padding-bottom: 5px;
+            }}
+            QLineEdit {{
+                background-color: {COLOR_BACKGROUND};
+                border: 1px solid {COLOR_BORDER};
+                border-radius: 5px;
+                padding: 8px 10px;
+                font-size: 14px;
+                min-height: 30px;
+            }}
+            QLineEdit:focus {{
+                border: 1px solid {COLOR_ACCENT};
+            }}
+            QPushButton {{
+                background-color: {COLOR_ACCENT};
+                color: white;
+                font-size: 14px;
+                font-weight: bold;
+                border: none;
+                border-radius: 5px;
+                padding: 6px 10px;
+            }}
+            QPushButton:hover {{
+                background-color: {COLOR_ACCENT_HOVER};
+            }}
+            #copy {{
+                background-color: {COLOR_ACCENT};
+                color: {COLOR_TEXT};
+                font-size: 12px;
+                font-weight: bold;
+            }}
+            #copy:hover {{
+                background-color: {COLOR_ACCENT_HOVER};
+            }}
+            #delete {{
+                background-color: {COLOR_ACCENT};
+                color: {COLOR_TEXT};
+                font-size: 11px;
+            }}
+            #delete:hover {{
+                background-color: {COLOR_ACCENT_HOVER};
+            }}
+            #LogoutButton {{
+                background-color: {COLOR_BORDER};
+            }}
+            #LogoutButton:hover {{
+                background-color: {COLOR_ERROR};
+            }}
+            #NotificationLabel {{
+                background-color: {COLOR_SUCCESS};
+                color: {COLOR_BACKGROUND};
+                font-weight: bold;
+                padding: 5px;
+            }}
+            /* make the list a card so rows contrast with the window */
+            QListWidget {{
+                border: 3px solid {COLOR_BORDER};
+                border-radius: 5px;
+                background-color: {COLOR_PRIMARY};
+            }}
+            QListWidget::item {{
+                padding: 6px 8px;
+                margin: 1;
+                background: transparent;
+            }}
+            /* alternate rows use a slightly lighter color so they are visible */
+            QListWidget::item:alternate {{
+                background: #323445; /* slightly different from COLOR_PRIMARY */
+            }}
+            QListWidget::item:selected {{
+                background: {COLOR_ACCENT};
+                color: white;
+            }}
+        """
+        self.setStyleSheet(stylesheet)
 
-            QPushButton:hover {
-                background-color: #2980b9; /* Darker blue on hover */
-                cursor: pointer; /* Indicate clickable */
-            }
+    def show_notification(self, message, is_error=False):
+        """Displays a temporary notification message."""
+        self.notification_label.setText(message)
+        bg_color = COLOR_ERROR if is_error else COLOR_SUCCESS
+        self.notification_label.setStyleSheet(f"background-color: {bg_color}; color: #111; font-weight: bold; padding: 5px;")
+        self.notification_label.setFixedHeight(30)
+        QTimer.singleShot(3000, lambda: self.notification_label.setFixedHeight(0))
 
-            QPushButton:pressed {
-                background-color: #21618c; /* Even darker blue when pressed */
-                padding-top: 13px; /* Slight press effect */
-                padding-bottom: 11px;
-            }
+    def switch_view(self, index):
+        """Switches between the login and main pages with a fade animation."""
+        self.stacked_widget.setCurrentIndex(index)
+        new_widget = self.stacked_widget.currentWidget()
 
-            QFrame[frameShape="4"] { /* Targeting the separator HLine */
-                border-top: 1px solid #cccccc;
-                margin: 15px 0;
-            }
-        """)
+        opacity_effect = QGraphicsOpacityEffect(new_widget)
+        new_widget.setGraphicsEffect(opacity_effect)
 
-    def load_pswds(self):
-        """Loads passwords from the JSON file."""
-        if not os.path.exists(self.PSWDS_PATH):
-            return {}
-        try:
-            with open(self.PSWDS_PATH, "r") as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            QMessageBox.warning(self, "File Error", "Error decoding passwords.json. File might be corrupted or empty.")
-            return {}
-        except IOError as e:
-            QMessageBox.critical(self, "File Error", f"Could not read passwords.json: {e}")
-            return {}
-
-    def save_pswds(self, data):
-        """Saves passwords to the JSON file."""
-        try:
-            with open(self.PSWDS_PATH, "w") as f:
-                json.dump(data, f, indent=4) # Use indent for pretty printing
-        except IOError as e:
-            QMessageBox.critical(self, "File Error", f"Could not save passwords.json: {e}")
+        # Store animation so it doesn't get garbage collected
+        self.fade_animation = QPropertyAnimation(opacity_effect, b"opacity")
+        self.fade_animation.setDuration(300)
+        self.fade_animation.setStartValue(0.0)
+        self.fade_animation.setEndValue(1.0)
+        self.fade_animation.setEasingCurve(QEasingCurve.Type.InOutQuad)
+        self.fade_animation.start(QPropertyAnimation.DeletionPolicy.DeleteWhenStopped)
 
     def verify_pat(self):
-        """Verifies the Personal Access Token (PAT)."""
-        if self.pat_entry.text() == self.PAT:
-            self.login_frame.hide()
-            self.main_frame.show()
-            self.setWindowTitle("SecureVault - Main") # Change title after login
-        else:
-            QMessageBox.critical(self, "Authentication Failed", "Incorrect PAT. Please try again.")
-            self.pat_entry.clear() # Clear incorrect entry
-
-    def search_pswd(self):
-        """Searches for a password based on the username."""
-        data = self.load_pswds()
-        username = self.search_entry.text().strip()
-        if not username:
-            QMessageBox.warning(self, "Input Required", "Please enter a username to search.")
+        """Verifies PAT or creates a new vault on first run."""
+        self.pat = self.pat_entry.text().strip()
+        if not self.pat:
+            self.show_notification("PAT cannot be empty.", is_error=True)
             return
 
-        if username in data:
-            QMessageBox.information(self, "Password Found", f"Username: {username}\nPassword: {data[username]}")
-        else:
-            QMessageBox.information(self, "Not Found", f"No password saved for username: '{username}'.")
+        # If vault doesn't exist, create it with the provided PAT
+        if not os.path.exists(VAULT_PATH):
+            try:
+                vault = {"__auth_check__": self.encrypt(AUTH_STRING)}
+                os.makedirs(os.path.dirname(VAULT_PATH), exist_ok=True)
+                with open(VAULT_PATH, 'w') as f:
+                    json.dump(vault, f, indent=4)
+
+                self.show_notification("Vault created successfully! Welcome.")
+                self.load_passwords_to_list() # Will be empty
+                self.switch_view(1)
+                self.pat_entry.clear()
+            except Exception as e:
+                print(f"Vault creation error: {e}")
+                self.show_notification("Could not create a new vault.", is_error=True)
+            return
+
+        # If vault exists, try to unlock it
+        try:
+            with open(VAULT_PATH, 'r') as f:
+                vault = json.load(f)
+            if "__auth_check__" not in vault:
+                raise ValueError("No authentication record found in vault.")
+
+            self.decrypt(vault["__auth_check__"]) # This will raise an exception on failure
+
+            self.show_notification("Login successful!")
+            self.load_passwords_to_list()
+            self.switch_view(1)
+            self.pat_entry.clear()
+        except Exception as e:
+            print(f"Login error: {e}")
+            self.show_notification("Incorrect PAT or corrupted vault.", is_error=True)
+
+    def logout(self):
+        """Logs out and returns to the login screen."""
+        self.pat = ""
+        self.password_list.clear()
         self.search_entry.clear()
+        self.switch_view(0)
+        self.show_notification("Logged out successfully.")
 
-    def add_pswd(self):
-        """Adds a new username and password entry."""
-        data = self.load_pswds()
-        username = self.add_user_entry.text().strip()
-        pswd = self.add_pass_entry.text().strip()
+    def load_passwords_to_list(self):
+        """Loads all usernames from the vault into the list widget."""
+        self.password_list.clear()
+        try:
+            with open(VAULT_PATH, 'r') as f:
+                vault = json.load(f)
 
-        if not username or not pswd:
-            QMessageBox.warning(self, "Input Required", "Username and password fields cannot be empty.")
+            usernames = [user for user in vault if user != "__auth_check__"]
+            for user in sorted(usernames):
+                # Create an empty item (we render our own widget for the row)
+                item = QListWidgetItem()
+                item.setFlags(item.flags() | Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
+
+                # Custom widget for the list item
+                item_widget = QWidget()
+                item_widget.setFixedHeight(34)                 # consistent, compact row height that fits the text
+                item_layout = QHBoxLayout(item_widget)
+                item_layout.setContentsMargins(10, 0, 10, 0)   # vertical margins 0 so content is vertically centered
+                item_layout.setSpacing(8)
+
+                user_label = QLabel(user)
+                user_label.setStyleSheet("font-size: 14px; background: transparent;")
+                user_label.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+                user_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+
+                copy_button = QPushButton("Copy Password")
+                copy_button.setObjectName("copy")
+                copy_button.setFixedWidth(120)
+                copy_button.setFixedHeight(26)                 # force button height so text is visible
+                copy_button.clicked.connect(lambda _, u=user: self.copy_password(u))
+
+                delete_button = QPushButton("Delete")
+                delete_button.setObjectName("delete")
+                delete_button.setFixedWidth(50)
+                delete_button.setFixedHeight(26)
+                delete_button.clicked.connect(lambda _, u=user: self.delete_password(u))
+
+                item_layout.addWidget(user_label)
+                item_layout.addStretch()
+                item_layout.addWidget(copy_button)
+                item_layout.addWidget(delete_button)
+
+                item.setSizeHint(item_widget.sizeHint())
+                self.password_list.addItem(item)
+                self.password_list.setItemWidget(item, item_widget)
+
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            print(f"Could not load vault: {e}")
+            # The vault might be empty or new, which is fine.
+
+    def filter_passwords(self):
+        """Filters the password list based on the search entry text."""
+        filter_text = self.search_entry.text().lower()
+        for i in range(self.password_list.count()):
+            item = self.password_list.item(i)
+            widget = self.password_list.itemWidget(item)
+            # find the label we set earlier
+            label = widget.findChild(QLabel)
+            username = label.text() if label is not None else ""
+            item.setHidden(filter_text not in username.lower())
+
+    def copy_password(self, user):
+        """Decrypts and copies a password to the clipboard."""
+        try:
+            with open(VAULT_PATH, 'r') as f:
+                vault = json.load(f)
+            password = self.decrypt(vault[user])
+            QApplication.clipboard().setText(password)
+            self.show_notification(f"Password for '{user}' copied to clipboard.")
+        except Exception as e:
+            self.show_notification(f"Could not retrieve password: {e}", is_error=True)
+
+    def add_password(self):
+        """Adds a new username and password to the vault."""
+        user = self.add_user_entry.text().strip()
+        password = self.add_pass_entry.text().strip()
+
+        if not user or not password:
+            self.show_notification("Username and password cannot be empty.", is_error=True)
             return
 
-        if username in data:
-            reply = QMessageBox.question(
-                self, "Overwrite Confirmation",
-                f"A password for '{username}' already exists. Do you want to overwrite it?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-            )
-            if reply == QMessageBox.StandardButton.No:
-                return
+        try:
+            # This function is only called from the main page, so vault must exist.
+            with open(VAULT_PATH, 'r') as f:
+                vault = json.load(f)
 
-        data[username] = pswd
-        self.save_pswds(data)
-        QMessageBox.information(self, "Success", "Password saved successfully!")
-        self.add_user_entry.clear()
-        self.add_pass_entry.clear()
+            vault[user] = self.encrypt(password)
+
+            with open(VAULT_PATH, 'w') as f:
+                json.dump(vault, f, indent=4)
+
+            self.show_notification(f"Password for '{user}' added successfully.")
+            self.add_user_entry.clear()
+            self.add_pass_entry.clear()
+            self.load_passwords_to_list() # Refresh the list
+
+        except Exception as e:
+            self.show_notification(f"Error saving to vault: {e}", is_error=True)
+
+    def delete_password(self, user):
+        """Deletes a username and password from the vault."""
+        try:
+            with open(VAULT_PATH, 'r') as f:
+                vault = json.load(f)
+
+            if user in vault:
+                del vault[user]
+                with open(VAULT_PATH, 'w') as f:
+                    json.dump(vault, f, indent=4)
+                self.show_notification(f"Deleted '{user}' successfully.")
+                self.load_passwords_to_list()
+            else:
+                self.show_notification(f"'{user}' not found.", is_error=True)
+
+        except Exception as e:
+            self.show_notification(f"Error deleting '{user}': {e}", is_error=True)
+
+    # --- Core Encryption/Decryption Logic (UNCHANGED) ---
+    def derive_key(self, salt):
+        kdf = Scrypt(
+            salt=bytes.fromhex(salt), length=32, n=2**14, r=8, p=1,
+            backend=default_backend()
+        )
+        return kdf.derive(self.pat.encode())
+
+    def encrypt(self, text):
+        salt = os.urandom(16)
+        nonce = os.urandom(12)
+        key = self.derive_key(salt.hex())
+        aesgcm = AESGCM(key)
+        encrypted = aesgcm.encrypt(nonce, text.encode(), None)
+        return {"salt": salt.hex(), "nonce": nonce.hex(), "cipher": encrypted.hex()}
+
+    def decrypt(self, data):
+        salt = data['salt']
+        nonce = bytes.fromhex(data['nonce'])
+        cipher = bytes.fromhex(data['cipher'])
+        key = self.derive_key(salt)
+        aesgcm = AESGCM(key)
+        return aesgcm.decrypt(nonce, cipher, None).decode()
+
+    def create_icon(self, color):
+        """Creates a simple QIcon for the application window."""
+        pixmap = QPixmap(64, 64)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        p = QPainter(pixmap)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.setBrush(QColor(color))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.drawRoundedRect(0, 0, 64, 64, 15, 15)
+        p.setPen(QColor(Qt.GlobalColor.white))
+        font = QFont("Arial", 32, QFont.Weight.Bold)
+        p.setFont(font)
+        p.drawText(pixmap.rect(), Qt.AlignmentFlag.AlignCenter, "SV")
+        p.end()
+        return QIcon(pixmap)
 
 if __name__ == '__main__':
+    # Ensure the password-manager directory exists
+    os.makedirs(os.path.dirname(VAULT_PATH), exist_ok=True)
+    
     app = QApplication(sys.argv)
-    manager = PasswordManager()
-    manager.show()
+    window = SecureVault()
+    window.show()
     sys.exit(app.exec())

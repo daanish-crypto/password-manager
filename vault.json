@@ -1,0 +1,142 @@
+{
+    "__auth_check__": {
+        "salt": "511fcaa6516a4b5a055a0923339124c1",
+        "nonce": "1f5c1fbe3aedbe2b8ce31e12",
+        "cipher": "0bb0e528b33f54b39bfd3cd8021c5f28b99ad7a47bf3f0f8"
+    },
+    "apple.com": {
+        "salt": "4099ded5ae38744a6747d82e9504fc2f",
+        "nonce": "5917756d58746f2479f2e36b",
+        "cipher": "9ac2e9d58d82222ae376479cafa21a20f4b7db4f749767e140530580"
+    },
+    "google.com": {
+        "salt": "9079f02e3fdee197358f2646028bd51f",
+        "nonce": "4691f3ccd5e3beeb108d08c7",
+        "cipher": "025f43e1d5a786c7e4ac5af8a25c5bed38d434c0d7ad8e3f4f"
+    },
+    "facebook.com": {
+        "salt": "b396caf3fe5138ea59a44c02a3b6f15c",
+        "nonce": "d78d38f50a4fb75d10aa3777",
+        "cipher": "99f7769220a791b2d4948de8cfbad76d130a879fa4c661af31c17361ac3f85"
+    },
+    "twitter.com": {
+        "salt": "b04982320a29507ddd99dcdec5e9b350",
+        "nonce": "3cb2c7abf6f4d1b459922270",
+        "cipher": "163140087348746f1b4b85638ff10bee595ff5ab733aeafdaef0bacd2d"
+    },
+    "instagram.com": {
+        "salt": "352c319c6d2e4fb82f9608f55dce2924",
+        "nonce": "b6d1865637a71c75b06007f9",
+        "cipher": "529491cdcecc16d8d540adc27c7dafa4012f0e6dad57ad82cd258e271ae1"
+    },
+    "linkedin.com": {
+        "salt": "cfe87c3a9962eeb66b2fe3c063f76a32",
+        "nonce": "1342e59c66c5a0c8f69cf062",
+        "cipher": "ec33cb2b637081ad43336b08f4d6ef6593d1b77cfc8db958e73b334c47930660"
+    },
+    "github.com": {
+        "salt": "1c9ba13a0225011e47066d764043c2a3",
+        "nonce": "5a8f494701da2d692d5ab4da",
+        "cipher": "873ca98cd48812f4b3710a083dcfb8bb44d33132351f7bbc2966de312278"
+    },
+    "yahoo.com": {
+        "salt": "7a649b9ce884a3b5cf0e72d71846c5f4",
+        "nonce": "dae7e7545082b3abf32104c8",
+        "cipher": "f645a3bce3a674b069cc9f0784224c38428dc20d6827797ae8980b22de5f"
+    },
+    "reddit.com": {
+        "salt": "47d6f07708485ec2108f244da78682d7",
+        "nonce": "bae7cfd559d0c3986cb52107",
+        "cipher": "e28f2296c0aa9e73c34b44fa3ed1b35cb332e3a23366a9233bf21d"
+    },
+    "netflix.com": {
+        "salt": "eb46514294af6cb78aa4faed9dc421f2",
+        "nonce": "56505dd760878e5e05370bd3",
+        "cipher": "98d80d2542061bc13716e533b2fe3e032e1e5fa345f86d4e92c52d332aab90a2"
+    },
+    "spotify.com": {
+        "salt": "0bd15694de8baa415cd8c872d5cb01b1",
+        "nonce": "c79fb8b5986246269a6de21c",
+        "cipher": "62aae4595b785bf7c6a168b5e1182f532a3654959f344f62a7cc95f33b2f36236e"
+    },
+    "alexriver@gmail.com": {
+        "salt": "76b5ce8d89a3e614c9f41e093d123265",
+        "nonce": "88793f6f5a61219e95dbddbc",
+        "cipher": "15266a489fdabeb7ab73372aab188a45a132821d663e6779b55aba5d02"
+    },
+    "locker": {
+        "salt": "fdc06df88c75c119333f833c74a73c3a",
+        "nonce": "26734a0037ba0c062605139c",
+        "cipher": "6c69873a01971afc9664ade5a70e9151e8bf77f67e88"
+    },
+    "geek-hacker": {
+        "salt": "c323c924490702167be19bb044f5b3cb",
+        "nonce": "69b2ab5190d921f2b4dbed37",
+        "cipher": "c6f0e1a4eef500dfadb89c62c88894a52be93d8ade1541ffad8ea99e36a575"
+    },
+    "admin": {
+        "salt": "bddb9e65d6c331f64f896ef20d052ebd",
+        "nonce": "fe4ffcbb3d2940d30bcad24a",
+        "cipher": "2f37553655c2504aa36e0ada6e242ab97ea0edf5b76b27b4fa24b1e6346b"
+    },
+    "monkey": {
+        "salt": "b6891c72ed91eb6fdaa0c0f87c9e8455",
+        "nonce": "771c95e38c7ef7fca3d4fef3",
+        "cipher": "8ee14caa90d32a8c5bbee4b7f5c510f5434a40eacdb3644dff"
+    },
+    "perfumepoint": {
+        "salt": "fbd90ec20cd5371f8615040d00abc8da",
+        "nonce": "352585ca8c03da41853a2a73",
+        "cipher": "36274261e817826e798e4e825a32707a52b337666bd5ed77e770fa474818"
+    },
+    "alexs_pvt": {
+        "salt": "76264af364b9aa5aa9c53b37f927538a",
+        "nonce": "11129257bc1e851fb0973e12",
+        "cipher": "dd4035aed52ddce64c094f2b723b6656fb58064636e8ceb1e8926996e0"
+    },
+    "nintendoalex": {
+        "salt": "b5f0a163c4ee67ed35bb7a085eeba03f",
+        "nonce": "180ea55e33957883ccd3530a",
+        "cipher": "7c81ef07dc6bf598752f5d5f218a97d0dabc11e34d767ab671"
+    },
+    "vscode": {
+        "salt": "09086e22482f7d60cb27487da94ed938",
+        "nonce": "4b02d0cd89cdc8fb30b0656e",
+        "cipher": "f515c06498e9cf42a7ad5a1441d585cadb613ee117dcbd15a8"
+    },
+    "statebank": {
+        "salt": "d68385ac79bbbd5ff452eb814e08a7e8",
+        "nonce": "3fda0792b1f638d13cc14a57",
+        "cipher": "f9aa0c6368714e34f4ece22d1d3547295e9903244c1d115cfbed034e"
+    },
+    "spotify2": {
+        "salt": "f2a77341e85c4eede39c9cd6d7f2d225",
+        "nonce": "59a344b2a55c00e204530765",
+        "cipher": "2d8ebdfa7d8f0f39887269b33dd2c25b9fccb08422bd2fa63493"
+    },
+    "chits@gmail.com": {
+        "salt": "5520c82d985936aacf0e680d7c62c3c1",
+        "nonce": "9bbe603b243be3f0a7c3a49f",
+        "cipher": "aaa5e25395b62c6d9355e9283e16f7751773a060031e0fe479b9a3f835d5ac278e"
+    },
+    "hp.com": {
+        "salt": "ab291bafa1769c8ff5364d68c359bfa6",
+        "nonce": "5a661925a1084c556d092bca",
+        "cipher": "88324056b9a7ef397b4efcfd1400674316ce65c643887c601add75b4353fb3ca4c"
+    },
+    "amazon.in.com.co": {
+        "salt": "06c8e42f432ad26a137ed35b2e585a27",
+        "nonce": "85b5a635c03115fc7840791b",
+        "cipher": "aab99ca92ced4604a809dcfa95671283b4a0787daaa3"
+    },
+    "alecs@gmail.com": {
+        "salt": "f2743a107f83b7cd99283acbf02be1f5",
+        "nonce": "89d036433e7e25f7b4f84283",
+        "cipher": "32250ace4fb2874f66a8f087c7a07aabe31f5acd6116161541e9c095"
+    },
+    "UniversityOfColorado-9583": {
+        "salt": "33a60b9f61b3c0b2cbb32565a32a59ae",
+        "nonce": "3e528a1c357433c2bb796b4c",
+        "cipher": "97d234e29623acf7266341c38aa5a35067f91fa09ee3aa5642072f58596858a0"
+    }
+}
