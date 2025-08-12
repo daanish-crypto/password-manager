@@ -5,8 +5,8 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.backends import default_backend
 
 # Constants
-INPUT_FILE = "password-manager/unencrypted_password.json"
-OUTPUT_FILE = "vault.json"
+INPUT_FILE = "password-manager/deprecated/unencrypted_password.json"
+OUTPUT_FILE = "password-manager/deprecated/vault.json"
 PAT = "twistmywrist"  # Replace with the PAT you want to use
 
 def derive_key(pat: str, salt: bytes) -> bytes:
