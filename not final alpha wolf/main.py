@@ -74,13 +74,13 @@ class SecureVault(QWidget):
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.setSpacing(20)
 
-        title = QLabel("SecureVault")
-        title.setObjectName("TitleLabel")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.title = QLabel("SecureVault")
+        self.title.setObjectName("TitleLabel")
+        self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        subtitle = QLabel("Enter your Personal Access Token to unlock.")
-        subtitle.setObjectName("SubtitleLabel")
-        subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.subtitle = QLabel("Enter your Personal Access Token to unlock.")
+        self.subtitle.setObjectName("SubtitleLabel")
+        self.subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.pat_entry = QLineEdit()
         self.pat_entry.setEchoMode(QLineEdit.EchoMode.Password)
@@ -92,8 +92,8 @@ class SecureVault(QWidget):
         login_button.clicked.connect(self.verify_pat)
         login_button.setFixedWidth(300)
 
-        layout.addWidget(title)
-        layout.addWidget(subtitle)
+        layout.addWidget(self.title)
+        layout.addWidget(self.subtitle)
         layout.addWidget(self.pat_entry, 0, Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(login_button, 0, Qt.AlignmentFlag.AlignCenter)
 
@@ -306,8 +306,9 @@ class SecureVault(QWidget):
         if not os.path.exists(VAULT_PATH):
 
             try:
-                self.create_login_page.title.setText("Creating Vault...")
-                self.create_login_page.subtitle.setText("Please wait while we set up your vault.")
+                self.title.setText("Creating Vault...")
+                self.subtitle.setText("Please wait while we set up your vault.")
+                QApplication.processEvents()
                 vault = {"__auth_check__": self.encrypt(AUTH_STRING)}
                 os.makedirs(os.path.dirname(VAULT_PATH), exist_ok=True)
                 with open(VAULT_PATH, 'w') as f:
