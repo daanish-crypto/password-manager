@@ -307,8 +307,6 @@ class SecureVault(QWidget):
                 self.subtitle.setText("Please wait while we set up your vault.")
                 QApplication.processEvents()
                 vault = {"__auth_check__": self.encrypt(AUTH_STRING)}
-                shutil.copy("vault authenticator.png", os.path.expanduser("~/Documents/SecureVault/packages")) 
-                shutil.copy("codec.png", os.path.expanduser("~/Documents/SecureVault/packages"))
                 os.makedirs(os.path.dirname(VAULT_PATH), exist_ok=True)
                 with open(VAULT_PATH, 'w') as f:
                     json.dump(vault, f, indent=4)
@@ -319,7 +317,7 @@ class SecureVault(QWidget):
                 self.pat_entry.clear()
             except Exception as e:
                 print(f"Vault creation error: {e}")
-                self.show_notification("Could not create a new vault.", is_error=True)
+                self.show_notification("Could not create a new vault. {e}", is_error=True)
             return
 
         # If vault exists, try to unlock it
