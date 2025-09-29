@@ -1,6 +1,7 @@
 import sys
 import json
 import os
+import shutil
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.backends import default_backend
@@ -306,6 +307,8 @@ class SecureVault(QWidget):
                 self.subtitle.setText("Please wait while we set up your vault.")
                 QApplication.processEvents()
                 vault = {"__auth_check__": self.encrypt(AUTH_STRING)}
+                shutil.copy("vault authenticator.png", os.path.expanduser("~/Documents/SecureVault/packages")) 
+                shutil.copy("codec.png", os.path.expanduser("~/Documents/SecureVault/packages"))
                 os.makedirs(os.path.dirname(VAULT_PATH), exist_ok=True)
                 with open(VAULT_PATH, 'w') as f:
                     json.dump(vault, f, indent=4)
