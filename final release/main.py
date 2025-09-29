@@ -13,7 +13,7 @@ from PyQt6.QtGui import QFont, QIcon, QPixmap, QPainter, QColor
 from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QTimer
 
 # --- Constants ---
-VAULT_PATH = "vault.json"
+VAULT_PATH = os.path.expanduser("~/Documents/SecureVault/local/vault.json")
 AUTH_STRING = "verified"
 
 # --- Theme Colors ---
