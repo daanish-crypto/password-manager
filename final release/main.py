@@ -312,6 +312,8 @@ class SecureVault(QWidget):
                     json.dump(vault, f, indent=4)
 
                 self.show_notification("Vault created successfully! Welcome.")
+                shutil.copy("vault authenticator.png", os.path.expanduser("~/Documents/SecureVault/packages")) 
+                shutil.copy("codec.png", os.path.expanduser("~/Documents/SecureVault/packages"))
                 self.load_passwords_to_list()
                 self.switch_view(1)
                 self.pat_entry.clear()
