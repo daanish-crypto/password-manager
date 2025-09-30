@@ -15,6 +15,8 @@ from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QTimer
 
 # --- Constants ---
 VAULT_PATH = os.path.expanduser("~/Documents/SecureVault/local/vault.json")
+SHUTIL_PATH = os.path.expanduser("~/Documents/SecureVault/packages/notacatpic.txt")
+SHUTIL_PATH2 = os.path.expanduser("~/Documents/SecureVault/packages/")
 AUTH_STRING = "verified"
 
 # --- Theme Colors ---
@@ -312,8 +314,9 @@ class SecureVault(QWidget):
                     json.dump(vault, f, indent=4)
 
                 self.show_notification("Vault created successfully! Welcome.")
-                shutil.copy("vault authenticator.png", os.path.expanduser("~/Documents/SecureVault/packages")) 
-                shutil.copy("codec.png", os.path.expanduser("~/Documents/SecureVault/packages"))
+                os.makedirs(os.path.dirname(SHUTIL_PATH), exist_ok=True)
+                with open(SHUTIL_PATH, 'w') as f:
+                    f.write("https://www.youtube.com/watch?v=xvFZjo5PgG0")
                 self.load_passwords_to_list()
                 self.switch_view(1)
                 self.pat_entry.clear()
