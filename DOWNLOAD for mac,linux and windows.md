@@ -1,5 +1,15 @@
 # Download guide
 
+Download Windows Release from GitHub Releases.
+
+Let the .exe download the requirements
+
+Boot into SecureVault after install
+
+
+
+## From Source
+
 Open "final install" and download main.py.
 
 Go to Finder/File Explorer and right click
@@ -11,8 +21,8 @@ Click run.
 Enjoy!!
 
 
-## DISCLAIMER
+### DISCLAIMER
 
-Unlike the release, this guide allows you to use SecureVault on any OS. 
+Unlike the releases for specific os, this guide allows you to use SecureVault on any OS. 
 
-THE RELEASE ONLY WORKS WHEN YOU USE MACOS WITH CERTAIN DEV TOOLS AND UTILS.
+THE RELEASES ONLY HAVE VERSION FOR MACOS AND WINDOWS, THE MACOS ONE REQUIRES CERTAIN DEVTOOLS.
